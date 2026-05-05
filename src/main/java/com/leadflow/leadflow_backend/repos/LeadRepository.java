@@ -1,7 +1,7 @@
 package com.leadflow.leadflow_backend.repos;
 
-import com.leadflow.leadflow_backend.model.Lead;
-import com.leadflow.leadflow_backend.model.LeadStatus;
+import com.leadflow.leadflow_backend.domain.Lead;
+import com.leadflow.leadflow_backend.domain.LeadStatus;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 

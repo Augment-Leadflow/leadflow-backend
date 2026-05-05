@@ -1,4 +1,4 @@
-package com.leadflow.leadflow_backend.model;
+package com.leadflow.leadflow_backend.domain;
 
 public enum LeadStatus {
     NEW,

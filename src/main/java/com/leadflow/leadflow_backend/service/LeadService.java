@@ -1,7 +1,7 @@
 package com.leadflow.leadflow_backend.service;
 
-import com.leadflow.leadflow_backend.model.Lead;
-import com.leadflow.leadflow_backend.model.LeadStatus;
+import com.leadflow.leadflow_backend.domain.Lead;
+import com.leadflow.leadflow_backend.domain.LeadStatus;
 import com.leadflow.leadflow_backend.repos.LeadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
