@@ -1,87 +1,79 @@
 package com.leadflow.leadflow_backend.service;
 
-import com.leadflow.leadflow_backend.domain.Lead;
-import com.leadflow.leadflow_backend.model.LeadDTO;
+import com.leadflow.leadflow_backend.model.Lead;
+import com.leadflow.leadflow_backend.model.LeadStatus;
 import com.leadflow.leadflow_backend.repos.LeadRepository;
-import com.leadflow.leadflow_backend.util.NotFoundException;
-import java.util.List;
-import org.springframework.data.domain.Sort;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class LeadService {
 
-    private final LeadRepository leadRepository;
+    @Autowired
+    private LeadRepository leadRepository;
 
-    public LeadService(final LeadRepository leadRepository) {
-        this.leadRepository = leadRepository;
+    // ─── Create Lead ──────────────────────────────────────────────────────────
+
+    public Lead createLead(Lead lead) {
+        System.out.println("DEBUG: Saving lead: " + lead.getName());
+
+        lead.setStatus(LeadStatus.NEW);
+        lead.setCreatedAt(LocalDateTime.now());
+        lead.setUpdatedAt(LocalDateTime.now());
+
+        return leadRepository.save(lead);
     }
 
-    public List<LeadDTO> findAll() {
-        final List<Lead> leads = leadRepository.findAll(Sort.by("id"));
-        return leads.stream()
-                .map(lead -> mapToDTO(lead, new LeadDTO()))
-                .toList();
+    // ─── Get All Leads (with optional status filter) ─────────────────────────
+
+    public List<Lead> getAllLeads(LeadStatus status) {
+        System.out.println("DEBUG: Fetching leads with status: " + status);
+
+        if (status != null) {
+            return leadRepository.findByStatus(status);
+        }
+        return leadRepository.findAll();
     }
 
-    public LeadDTO get(final String id) {
+    // ─── Get Lead By ID ───────────────────────────────────────────────────────
+
+    public Lead getLeadById(String id) {
+        System.out.println("DEBUG: Fetching lead ID: " + id);
+
         return leadRepository.findById(id)
-                .map(lead -> mapToDTO(lead, new LeadDTO()))
-                .orElseThrow(NotFoundException::new);
+                .orElseThrow(() -> new RuntimeException("Lead not found with ID: " + id));
     }
 
-    public String create(final LeadDTO leadDTO) {
-        final Lead lead = new Lead();
-        mapToEntity(leadDTO, lead);
-        lead.setId(leadDTO.getId());
-        return leadRepository.save(lead).getId();
+    // ─── Update Lead ──────────────────────────────────────────────────────────
+
+    public Lead updateLead(String id, Lead updatedData) {
+        System.out.println("DEBUG: Updating lead ID: " + id);
+
+        Lead existing = leadRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Lead not found with ID: " + id));
+
+        if (updatedData.getStatus() != null) {
+            existing.setStatus(updatedData.getStatus());
+        }
+        if (updatedData.getNotes() != null) {
+            existing.setNotes(updatedData.getNotes());
+        }
+        existing.setUpdatedAt(LocalDateTime.now());
+
+        return leadRepository.save(existing);
     }
 
-    public void update(final String id, final LeadDTO leadDTO) {
-        final Lead lead = leadRepository.findById(id)
-                .orElseThrow(NotFoundException::new);
-        mapToEntity(leadDTO, lead);
-        leadRepository.save(lead);
-    }
+    // ─── Delete Lead ──────────────────────────────────────────────────────────
 
-    public void delete(final String id) {
-        final Lead lead = leadRepository.findById(id)
-                .orElseThrow(NotFoundException::new);
-        leadRepository.delete(lead);
-    }
+    public void deleteLead(String id) {
+        System.out.println("DEBUG: Deleting lead ID: " + id);
 
-    private LeadDTO mapToDTO(final Lead lead, final LeadDTO leadDTO) {
-        leadDTO.setId(lead.getId());
-        leadDTO.setUserId(lead.getUserId());
-        leadDTO.setName(lead.getName());
-        leadDTO.setPhone(lead.getPhone());
-        leadDTO.setEmail(lead.getEmail());
-        leadDTO.setSource(lead.getSource());
-        leadDTO.setStatus(lead.getStatus());
-        leadDTO.setNotes(lead.getNotes());
-        leadDTO.setLastContacted(lead.getLastContacted());
-        leadDTO.setCreatedAt(lead.getCreatedAt());
-        leadDTO.setUpdatedAt(lead.getUpdatedAt());
-        return leadDTO;
-    }
+        leadRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Lead not found with ID: " + id));
 
-    private Lead mapToEntity(final LeadDTO leadDTO, final Lead lead) {
-        lead.setUserId(leadDTO.getUserId());
-        lead.setName(leadDTO.getName());
-        lead.setPhone(leadDTO.getPhone());
-        lead.setEmail(leadDTO.getEmail());
-        lead.setSource(leadDTO.getSource());
-        lead.setStatus(leadDTO.getStatus());
-        lead.setNotes(leadDTO.getNotes());
-        lead.setLastContacted(leadDTO.getLastContacted());
-        lead.setCreatedAt(leadDTO.getCreatedAt());
-        lead.setUpdatedAt(leadDTO.getUpdatedAt());
-        return lead;
+        leadRepository.deleteById(id);
     }
-
-    public boolean idExists(final String id) {
-        return leadRepository.existsByIdIgnoreCase(id);
-    }
-
 }
