@@ -1,4 +1,8 @@
 package com.leadflow.leadflow_backend.domain;
 
-public class MessageType {
+public enum MessageType {
+    AUTO_NEW_LEAD,
+    MANUAL,
+    REMINDER,
+    FOLLOWUP
 }

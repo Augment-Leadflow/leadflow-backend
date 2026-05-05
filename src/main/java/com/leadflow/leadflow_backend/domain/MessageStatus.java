@@ -1,4 +1,7 @@
 package com.leadflow.leadflow_backend.domain;
 
-public class MessageStatus {
+public enum MessageStatus {
+    SUCCESS,
+    FAILED
 }
+
