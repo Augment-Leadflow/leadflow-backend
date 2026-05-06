@@ -1,8 +1,9 @@
 package com.leadflow.leadflow_backend.rest;
 
-import com.leadflow.leadflow_backend.domain.Lead;
 import com.leadflow.leadflow_backend.domain.LeadStatus;
+import com.leadflow.leadflow_backend.model.LeadDTO;
 import com.leadflow.leadflow_backend.service.LeadService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,14 +19,11 @@ public class LeadResource {
     @Autowired
     private LeadService leadService;
 
-    // ─── POST /api/leads ──────────────────────────────────────────────────────
-    // Create a new lead (status auto-set to NEW)
-
     @PostMapping
-    public ResponseEntity<?> createLead(@RequestBody Lead lead) {
-        System.out.println("DEBUG: POST /api/leads called for: " + lead.getName());
+    public ResponseEntity<?> createLead(@RequestBody @Valid final LeadDTO leadDTO) {
+        System.out.println("DEBUG: POST /api/leads called for: " + leadDTO.getName());
         try {
-            Lead created = leadService.createLead(lead);
+            LeadDTO created = leadService.createLead(leadDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -33,66 +31,42 @@ public class LeadResource {
         }
     }
 
-    // ─── GET /api/leads ───────────────────────────────────────────────────────
-    // Get all leads; optionally filter by ?status=NEW|CONTACTED|CONVERTED|LOST
-
     @GetMapping
-    public ResponseEntity<?> getAllLeads(
-            @RequestParam(required = false) LeadStatus status) {
-        System.out.println("DEBUG: GET /api/leads called with status filter: " + status);
+    public ResponseEntity<?> getAllLeads(@RequestParam(required = false) final LeadStatus status) {
+        System.out.println("DEBUG: GET /api/leads - Status Filter: " + status);
         try {
-            List<Lead> leads = leadService.getAllLeads(status);
-            return ResponseEntity.ok(leads);
+            return ResponseEntity.ok(leadService.getAllLeads(status));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error fetching leads: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
-
-    // ─── GET /api/leads/{id} ──────────────────────────────────────────────────
-    // Get a single lead by MongoDB ID
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getLeadById(@PathVariable String id) {
-        System.out.println("DEBUG: GET /api/leads/" + id + " called");
+    public ResponseEntity<?> getLeadById(@PathVariable final String id) {
         try {
-            Lead lead = leadService.getLeadById(id);
-            return ResponseEntity.ok(lead);
+            return ResponseEntity.ok(leadService.getLeadById(id));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Lead not found: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
 
-    // ─── PATCH /api/leads/{id} ────────────────────────────────────────────────
-    // Update status and/or notes of an existing lead
-
-    @PatchMapping("/{id}")
-    public ResponseEntity<?> updateLead(
-            @PathVariable String id,
-            @RequestBody Lead updatedData) {
-        System.out.println("DEBUG: PATCH /api/leads/" + id + " called");
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateLead(@PathVariable final String id, @RequestBody @Valid final LeadDTO leadDTO) {
+        System.out.println("DEBUG: Updating Lead ID: " + id);
         try {
-            Lead updated = leadService.updateLead(id, updatedData);
-            return ResponseEntity.ok(updated);
+            return ResponseEntity.ok(leadService.updateLead(id, leadDTO));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Lead not found: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
-
-    // ─── DELETE /api/leads/{id} ───────────────────────────────────────────────
-    // Delete a lead by ID
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteLead(@PathVariable String id) {
-        System.out.println("DEBUG: DELETE /api/leads/" + id + " called");
+    public ResponseEntity<?> deleteLead(@PathVariable final String id) {
         try {
             leadService.deleteLead(id);
             return ResponseEntity.ok("Lead deleted successfully.");
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Lead not found: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
 }

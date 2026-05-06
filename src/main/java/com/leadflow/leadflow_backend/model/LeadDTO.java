@@ -1,47 +1,25 @@
 package com.leadflow.leadflow_backend.model;
 
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import java.time.OffsetDateTime;
-import lombok.Getter;
-import lombok.Setter;
+import com.leadflow.leadflow_backend.domain.LeadStatus;
+import lombok.Data;
 
+import java.time.LocalDateTime;
 
-@Getter
-@Setter
+@Data
 public class LeadDTO {
 
-    @Size(max = 255)
-    @LeadIdValid
-    private String id;
+    private String id;           // null on create requests, populated in responses
 
-    @NotNull
-    @Size(max = 255)
-    private String userId;
-
-    @NotNull
-    @Size(max = 255)
     private String name;
-
-    @NotNull
-    @Size(max = 50)
     private String phone;
-
-    @Size(max = 255)
-    private String email;
-
-    @Size(max = 100)
     private String source;
-
-    @Size(max = 50)
-    private String status;
-
     private String notes;
 
-    private OffsetDateTime lastContacted;
+    // Sent as String from frontend ("NEW", "CONTACTED", "CONVERTED", "LOST")
+    // null on create → backend defaults to NEW
+    private String status;
 
-    private OffsetDateTime createdAt;
-
-    private OffsetDateTime updatedAt;
-
+    // Read-only — returned in responses, ignored when sent by frontend
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

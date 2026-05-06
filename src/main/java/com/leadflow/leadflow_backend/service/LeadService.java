@@ -2,12 +2,15 @@ package com.leadflow.leadflow_backend.service;
 
 import com.leadflow.leadflow_backend.domain.Lead;
 import com.leadflow.leadflow_backend.domain.LeadStatus;
+import com.leadflow.leadflow_backend.model.LeadDTO;
 import com.leadflow.leadflow_backend.repos.LeadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class LeadService {
@@ -16,64 +19,93 @@ public class LeadService {
     private LeadRepository leadRepository;
 
     // ─── Create Lead ──────────────────────────────────────────────────────────
+    public LeadDTO createLead(final LeadDTO leadDTO) {
+        System.out.println("DEBUG: Saving lead: " + leadDTO.getName());
 
-    public Lead createLead(Lead lead) {
-        System.out.println("DEBUG: Saving lead: " + lead.getName());
+        final Lead lead = new Lead();
+        mapToEntity(leadDTO, lead);
 
         lead.setStatus(LeadStatus.NEW);
         lead.setCreatedAt(LocalDateTime.now());
         lead.setUpdatedAt(LocalDateTime.now());
 
-        return leadRepository.save(lead);
+        final Lead savedLead = leadRepository.save(lead);
+        return mapToDTO(savedLead, new LeadDTO());
     }
 
-    // ─── Get All Leads (with optional status filter) ─────────────────────────
-
-    public List<Lead> getAllLeads(LeadStatus status) {
+    // ─── Get All Leads ─────────────────────────
+    public List<LeadDTO> getAllLeads(final LeadStatus status) {
         System.out.println("DEBUG: Fetching leads with status: " + status);
 
-        if (status != null) {
-            return leadRepository.findByStatus(status);
-        }
-        return leadRepository.findAll();
+        final List<Lead> leads = (status != null) ? leadRepository.findByStatus(status) : leadRepository.findAll();
+
+        return leads.stream()
+                .map(lead -> mapToDTO(lead, new LeadDTO()))
+                .collect(Collectors.toList());
     }
 
     // ─── Get Lead By ID ───────────────────────────────────────────────────────
-
-    public Lead getLeadById(String id) {
+    public LeadDTO getLeadById(final String id) {
         System.out.println("DEBUG: Fetching lead ID: " + id);
 
-        return leadRepository.findById(id)
+        final Lead lead = leadRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Lead not found with ID: " + id));
+        return mapToDTO(lead, new LeadDTO());
     }
 
     // ─── Update Lead ──────────────────────────────────────────────────────────
-
-    public Lead updateLead(String id, Lead updatedData) {
+    public LeadDTO updateLead(final String id, final LeadDTO leadDTO) {
         System.out.println("DEBUG: Updating lead ID: " + id);
 
-        Lead existing = leadRepository.findById(id)
+        final Lead existing = leadRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Lead not found with ID: " + id));
 
-        if (updatedData.getStatus() != null) {
-            existing.setStatus(updatedData.getStatus());
-        }
-        if (updatedData.getNotes() != null) {
-            existing.setNotes(updatedData.getNotes());
-        }
+        mapToEntity(leadDTO, existing);
         existing.setUpdatedAt(LocalDateTime.now());
 
-        return leadRepository.save(existing);
+        final Lead updated = leadRepository.save(existing);
+        return mapToDTO(updated, new LeadDTO());
     }
 
     // ─── Delete Lead ──────────────────────────────────────────────────────────
-
-    public void deleteLead(String id) {
+    public void deleteLead(final String id) {
         System.out.println("DEBUG: Deleting lead ID: " + id);
 
-        leadRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Lead not found with ID: " + id));
-
+        if (!leadRepository.existsById(id)) {
+            throw new RuntimeException("Lead not found with ID: " + id);
+        }
         leadRepository.deleteById(id);
+    }
+
+    // ─── Check ID for Validation ─────────────────────────────────────────────
+    public boolean idExists(final String id) {
+        System.out.println("DEBUG: Validating existence for ID: " + id);
+        return leadRepository.existsById(id);
+    }
+
+    // ─── Helper Methods (Mapping Logic) ──────────────────────────────────────
+
+    private Lead mapToEntity(final LeadDTO leadDTO, final Lead lead) {
+        lead.setName(leadDTO.getName());
+        lead.setPhone(leadDTO.getPhone());
+        lead.setSource(leadDTO.getSource());
+        lead.setNotes(leadDTO.getNotes());
+        if (leadDTO.getStatus() != null) {
+            lead.setStatus(LeadStatus.valueOf(leadDTO.getStatus()));
+        }
+        return lead;
+    }
+
+    private LeadDTO mapToDTO(final Lead lead, final LeadDTO leadDTO) {
+        leadDTO.setId(lead.getId());
+        leadDTO.setName(lead.getName());
+        leadDTO.setPhone(lead.getPhone());
+        leadDTO.setSource(lead.getSource());
+        leadDTO.setStatus(lead.getStatus().name());
+        leadDTO.setNotes(lead.getNotes());
+        if (lead.getCreatedAt() != null) {
+            leadDTO.setCreatedAt(lead.getCreatedAt().atOffset(ZoneOffset.UTC).toLocalDateTime());
+        }
+        return leadDTO;
     }
 }
