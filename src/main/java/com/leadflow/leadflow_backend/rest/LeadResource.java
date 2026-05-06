@@ -32,7 +32,7 @@ public class LeadResource {
     }
 
     @GetMapping
-    public ResponseEntity<?> getAllLeads(@RequestParam(required = false) final LeadStatus status) {
+    public ResponseEntity<?> getAllLeads(@RequestParam(required = false) String status) {
         System.out.println("DEBUG: GET /api/leads - Status Filter: " + status);
         try {
             return ResponseEntity.ok(leadService.getAllLeads(status));

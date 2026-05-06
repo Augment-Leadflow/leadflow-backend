@@ -2,6 +2,7 @@ package com.leadflow.leadflow_backend.service;
 
 import com.leadflow.leadflow_backend.domain.Lead;
 import com.leadflow.leadflow_backend.domain.LeadStatus;
+import com.leadflow.leadflow_backend.exception.ResourceNotFoundException;
 import com.leadflow.leadflow_backend.model.LeadDTO;
 import com.leadflow.leadflow_backend.repos.LeadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ public class LeadService {
     @Autowired
     private LeadRepository leadRepository;
 
+    //private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(LeadService.class);
     // ─── Create Lead ──────────────────────────────────────────────────────────
     public LeadDTO createLead(final LeadDTO leadDTO) {
         System.out.println("DEBUG: Saving lead: " + leadDTO.getName());
@@ -34,22 +36,31 @@ public class LeadService {
     }
 
     // ─── Get All Leads ─────────────────────────
-    public List<LeadDTO> getAllLeads(final LeadStatus status) {
-        System.out.println("DEBUG: Fetching leads with status: " + status);
+    public List<LeadDTO> getAllLeads(String statusStr) {
+        System.out.println("DEBUG: Fetching leads with status: " + statusStr);
 
-        final List<Lead> leads = (status != null) ? leadRepository.findByStatus(status) : leadRepository.findAll();
+        List<Lead> leads;
+        if (statusStr != null && !statusStr.trim().isEmpty()) {
+            try {
+                LeadStatus status = LeadStatus.valueOf(statusStr.toUpperCase());
+                leads = leadRepository.findByStatus(status);
+            } catch (IllegalArgumentException e) {
+                leads = leadRepository.findAll();
+            }
+        } else {
+            leads = leadRepository.findAll();
+        }
 
         return leads.stream()
                 .map(lead -> mapToDTO(lead, new LeadDTO()))
                 .collect(Collectors.toList());
     }
-
     // ─── Get Lead By ID ───────────────────────────────────────────────────────
     public LeadDTO getLeadById(final String id) {
         System.out.println("DEBUG: Fetching lead ID: " + id);
 
         final Lead lead = leadRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Lead not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Lead not found with ID: " + id));
         return mapToDTO(lead, new LeadDTO());
     }
 
@@ -58,7 +69,7 @@ public class LeadService {
         System.out.println("DEBUG: Updating lead ID: " + id);
 
         final Lead existing = leadRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Lead not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Lead not found with ID: " + id));
 
         mapToEntity(leadDTO, existing);
         existing.setUpdatedAt(LocalDateTime.now());
@@ -72,7 +83,7 @@ public class LeadService {
         System.out.println("DEBUG: Deleting lead ID: " + id);
 
         if (!leadRepository.existsById(id)) {
-            throw new RuntimeException("Lead not found with ID: " + id);
+            throw new ResourceNotFoundException("Lead not found with ID: " + id);
         }
         leadRepository.deleteById(id);
     }
