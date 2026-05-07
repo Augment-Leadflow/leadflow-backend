@@ -2,6 +2,7 @@ package com.leadflow.leadflow_backend.rest;
 
 import com.leadflow.leadflow_backend.dto.LoginRequest;
 import com.leadflow.leadflow_backend.dto.LoginResponse;
+import com.leadflow.leadflow_backend.dto.RegisterRequest;
 import com.leadflow.leadflow_backend.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,22 @@ public class AuthController {
                 authService.login(request);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(
+            @Valid @RequestBody
+            RegisterRequest request
+    ) {
+
+        log.info(
+                "Register request received for email: {}",
+                request.getEmail()
+        );
+
+        return ResponseEntity
+                .status(201)
+                .body(authService.register(request));
     }
 
 }

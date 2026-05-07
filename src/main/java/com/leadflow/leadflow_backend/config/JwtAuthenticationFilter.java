@@ -43,7 +43,7 @@ public class JwtAuthenticationFilter
 
         String email = null;
 
-        if (authHeader != null &&
+        if(authHeader != null &&
                 authHeader.startsWith("Bearer ")) {
 
             jwtToken = authHeader.substring(7);
