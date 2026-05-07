@@ -1,6 +1,7 @@
 package com.leadflow.leadflow_backend.config;
 
-import com.leadflow.leadflow_backend.service.CustomUserDetailsService;
+import com.leadflow.leadflow_backend.model.User;
+import com.leadflow.leadflow_backend.repos.UserRepository;
 import com.leadflow.leadflow_backend.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -9,13 +10,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -25,8 +27,7 @@ public class JwtAuthenticationFilter
 
     private final JwtUtil jwtUtil;
 
-    private final CustomUserDetailsService
-            userDetailsService;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(
@@ -42,7 +43,7 @@ public class JwtAuthenticationFilter
 
         String email = null;
 
-        if(authHeader != null &&
+        if (authHeader != null &&
                 authHeader.startsWith("Bearer ")) {
 
             jwtToken = authHeader.substring(7);
@@ -50,22 +51,27 @@ public class JwtAuthenticationFilter
             email = jwtUtil.extractEmail(jwtToken);
         }
 
-        if(email != null &&
+        if (email != null &&
                 SecurityContextHolder
                         .getContext()
                         .getAuthentication() == null) {
 
-            UserDetails userDetails =
-                    userDetailsService
-                            .loadUserByUsername(email);
+            User user = userRepository
+                    .findByEmail(email)
+                    .orElse(null);
 
-            if(jwtUtil.validateToken(jwtToken)) {
+            if (user != null &&
+                    jwtUtil.validateToken(jwtToken)) {
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
-                                userDetails,
+                                user,
                                 null,
-                                userDetails.getAuthorities()
+                                List.of(
+                                        new SimpleGrantedAuthority(
+                                                "ROLE_" + user.getRole().name()
+                                        )
+                                )
                         );
 
                 authToken.setDetails(
