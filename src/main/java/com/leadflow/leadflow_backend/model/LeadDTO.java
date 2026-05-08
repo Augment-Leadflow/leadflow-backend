@@ -9,7 +9,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class LeadDTO {
+public class LeadDTO{
 
     @Size(max = 255)
     @LeadIdValid

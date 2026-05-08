@@ -103,6 +103,7 @@ package com.leadflow.leadflow_backend.automation.scheduler;
 import com.leadflow.leadflow_backend.domain.Lead;
 import com.leadflow.leadflow_backend.repos.LeadRepository;
 
+import com.leadflow.leadflow_backend.service.EmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,9 +119,12 @@ public class ScheduledTasks {
     private static final Logger logger = LoggerFactory.getLogger(ScheduledTasks.class);
 
     private final LeadRepository leadRepository;
+    private final EmailService emailService;
 
-    public ScheduledTasks(LeadRepository leadRepository) {
+    public ScheduledTasks(LeadRepository leadRepository,
+                          EmailService emailService    ) {
         this.leadRepository = leadRepository;
+        this.emailService = emailService;
     }
 
     @Scheduled(fixedRate = 60000) // every 1 min
@@ -144,10 +148,46 @@ public class ScheduledTasks {
 
             if (lead.getLastReminderSent() == null) {
 
+                // Telegram Log
+
                 logger.info(
                         "Reminder sent to NEW lead: {}",
                         lead.getName()
                 );
+
+                // EMAIL LOGIC
+                if (lead.getEmail() != null &&
+                        !lead.getEmail().isEmpty()) {
+
+                    try {
+
+                        emailService.sendEmail(
+                                lead.getEmail(),
+                                "Lead Reminder",
+                                "Hello " + lead.getName() +
+                                        ", this is your reminder."
+                        );
+
+                        logger.info(
+                                "Email reminder sent to: {}",
+                                lead.getEmail()
+                        );
+
+                    } catch (Exception e) {
+
+                        logger.error(
+                                "Failed to send reminder email to {}",
+                                lead.getEmail()
+                        );
+                    }
+
+                } else {
+
+                    logger.warn(
+                            "Lead {} has no email address",
+                            lead.getName()
+                    );
+                }
 
                 lead.setLastReminderSent(now);
                 leadRepository.save(lead);
@@ -177,10 +217,46 @@ public class ScheduledTasks {
 
             if (lead.getLastFollowupSent() == null) {
 
+                // Telegram Log
+
                 logger.info(
                         "Follow-up sent to CONTACTED lead: {}",
                         lead.getName()
                 );
+
+                // EMAIL LOGIC
+                if (lead.getEmail() != null &&
+                        !lead.getEmail().isEmpty()) {
+
+                    try {
+
+                        emailService.sendEmail(
+                                lead.getEmail(),
+                                "Follow-up Reminder",
+                                "Hello " + lead.getName() +
+                                        ", this is your follow-up reminder."
+                        );
+
+                        logger.info(
+                                "Follow-up email sent to: {}",
+                                lead.getEmail()
+                        );
+
+                    } catch (Exception e) {
+
+                        logger.error(
+                                "Failed to send follow-up email to {}",
+                                lead.getEmail()
+                        );
+                    }
+
+                } else {
+
+                    logger.warn(
+                            "Lead {} has no email address",
+                            lead.getName()
+                    );
+                }
 
                 lead.setLastFollowupSent(now);
                 leadRepository.save(lead);
