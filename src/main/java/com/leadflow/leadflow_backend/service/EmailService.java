@@ -8,6 +8,7 @@ import com.leadflow.leadflow_backend.model.SendResponse;
 import com.leadflow.leadflow_backend.repos.MessageLogRepository;
 import com.leadflow.leadflow_backend.util.EmailTemplates;
 import jakarta.mail.internet.MimeMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,10 +19,11 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 public class EmailService {
 
-    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
+
     private static final int MAX_RETRIES = 3;
     private static final long RETRY_DELAY_MS = 1000L;
 
@@ -37,14 +39,14 @@ public class EmailService {
     // ─── Public: Send Email
 
     public SendResponse sendEmail(String toEmail, String leadName, String type) {
-        logger.info("Attempting to send email. Type: {}, To: {}", type, toEmail);
+        log.info("Attempting to send email. Type: {}, To: {}", type, toEmail);
 
         String subject = getSubject(type);
         String body = getBody(type, leadName);
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
-                logger.info("Email attempt {}/{}", attempt, MAX_RETRIES);
+                log.info("Email attempt {}/{}", attempt, MAX_RETRIES);
 
                 MimeMessage message = mailSender.createMimeMessage();
                 MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -57,16 +59,16 @@ public class EmailService {
                 mailSender.send(message);
 
                 logMessage(toEmail, subject, type, MessageStatus.SUCCESS, null);
-                logger.info("Email sent successfully to: {}", toEmail);
+                log.info("Email sent successfully to: {}", toEmail);
 
                 return new SendResponse(true, null, LocalDateTime.now());
 
             } catch (Exception e) {
-                logger.warn("Email attempt {}/{} failed: {}", attempt, MAX_RETRIES, e.getMessage());
+                log.warn("Email attempt {}/{} failed: {}", attempt, MAX_RETRIES, e.getMessage());
 
                 if (attempt == MAX_RETRIES) {
                     logMessage(toEmail, subject, type, MessageStatus.FAILED, e.getMessage());
-                    logger.error("All {} attempts failed for email: {}", MAX_RETRIES, toEmail);
+                    log.error("All {} attempts failed for email: {}", MAX_RETRIES, toEmail);
                     throw new EmailException("Failed to send email after " + MAX_RETRIES + " retries", e);
                 }
 
@@ -111,21 +113,22 @@ public class EmailService {
     private void logMessage(String email, String subject, String type,
                             MessageStatus status, String error) {
         try {
-            MessageLog log = new MessageLog();
-            log.setRecipient(email);
-            log.setChannel("EMAIL");
-            log.setMessageText(subject);
-            log.setMessageType(MessageType.valueOf(type));
-            log.setStatus(status);
-            log.setErrorMessage(error);
-            log.setSentAt(LocalDateTime.now());
+            MessageLog messageLog = new MessageLog();
+            messageLog.setRecipient(email);
+            messageLog.setChannel("EMAIL");
+            messageLog.setMessageText(subject);
+            messageLog.setMessageType(MessageType.valueOf(type));
+            messageLog.setStatus(status);
+            messageLog.setErrorMessage(error);
+            messageLog.setSentAt(LocalDateTime.now());
 
-            logger.info("Saving email log to MongoDB — status: {}", status);
-            MessageLog saved = messageLogRepository.save(log);
-            logger.info("Email log saved — id: {}", saved.getId());
+
+            log.info("Saving email log to MongoDB — status: {}", status);
+            MessageLog saved = messageLogRepository.save(messageLog);
+            log.info("Email log saved — id: {}", saved.getId());
 
         } catch (Exception e) {
-            logger.error("Failed to save email log: {}", e.getMessage(), e);
+            log.error("Failed to save email log: {}", e.getMessage(), e);
         }
     }
 }

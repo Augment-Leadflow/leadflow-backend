@@ -1,7 +1,7 @@
 package com.leadflow.leadflow_backend.rest;
 
 import com.leadflow.leadflow_backend.teleException.EmailException;
-import com.leadflow.leadflow_backend.model.EmailRequest;
+import com.leadflow.leadflow_backend.model.Emailrequest;
 import com.leadflow.leadflow_backend.model.SendResponse;
 import com.leadflow.leadflow_backend.service.EmailService;
 import jakarta.validation.Valid;
@@ -23,8 +23,6 @@ public class EmailController {
 
     /**
      * POST /api/email/send
-     * Protected by JWT (configured in SecurityConfig by teammate)
-     *
      * Request:
      * {
      *   "email": "john@example.com",
@@ -34,7 +32,7 @@ public class EmailController {
      */
     @PostMapping("/send")
     public ResponseEntity<SendResponse> sendEmail(
-            @Valid @RequestBody EmailRequest request) {
+            @Valid @RequestBody Emailrequest request) {
 
         logger.info("Received email send request for: {} ({})", request.getName(), request.getEmail());
 

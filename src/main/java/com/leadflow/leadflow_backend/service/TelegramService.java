@@ -5,6 +5,7 @@ import com.leadflow.leadflow_backend.domain.MessageStatus;
 import com.leadflow.leadflow_backend.domain.MessageType;
 import com.leadflow.leadflow_backend.teleException.TelegramException;
 import com.leadflow.leadflow_backend.repos.MessageLogRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,24 +13,24 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+
+@Slf4j
 @Service
 public class TelegramService {
 
-    private static final Logger logger = LoggerFactory.getLogger(TelegramService.class);
     private static final String TELEGRAM_API_URL = "https://api.telegram.org/bot";
     private static final int MAX_RETRIES = 3;
     private static final long RETRY_DELAY_MS = 1000L;
 
 
-    @Value("${telegram.bot.token}")   // ← must match exactly
+    @Value("${telegram.bot.token}")
     private String botToken;
 
-    @Value("${telegram.chat.id}")     // ← must match exactly
+    @Value("${telegram.chat.id}")
     private String chatId;
 
     @Autowired
@@ -41,11 +42,11 @@ public class TelegramService {
 
     public SendResponse sendMessage(String name, String phone, String source, String type) {
         String messageText = getTemplate(type, name, phone, source);
-        logger.info("Attempting to send Telegram message. Type: {}, Name: {}", type, name);
+        log.info("Attempting to send Telegram message. Type: {}, Name: {}", type, name);
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
-                logger.info("Attempt {}/{}", attempt, MAX_RETRIES);
+                log.info("Attempt {}/{}", attempt, MAX_RETRIES);
 
                 String url = TELEGRAM_API_URL + botToken + "/sendMessage";
 
@@ -66,16 +67,16 @@ public class TelegramService {
                 Integer messageId = (Integer) result.get("message_id");
 
                 logMessage(chatId, messageText, type, MessageStatus.SUCCESS, messageId, null);
-                logger.info("Message sent successfully. Telegram messageId: {}", messageId);
+                log.info("Message sent successfully. Telegram messageId: {}", messageId);
 
                 return new SendResponse(true, messageId, LocalDateTime.now());
 
             } catch (Exception e) {
-                logger.warn("Attempt {}/{} failed: {}", attempt, MAX_RETRIES, e.getMessage());
+                log.warn("Attempt {}/{} failed: {}", attempt, MAX_RETRIES, e.getMessage());
 
                 if (attempt == MAX_RETRIES) {
                     logMessage(chatId, messageText, type, MessageStatus.FAILED, null, e.getMessage());
-                    logger.error("All {} attempts failed. Logging failure.", MAX_RETRIES);
+                    log.error("All {} attempts failed. Logging failure.", MAX_RETRIES);
                     throw new TelegramException("Failed to send Telegram message after " + MAX_RETRIES + " retries", e);
                 }
 
@@ -88,7 +89,7 @@ public class TelegramService {
             }
         }
 
-        return null; // unreachable, but satisfies compiler
+        return null;
     }
 
 
@@ -126,43 +127,26 @@ public class TelegramService {
         }
     }
 
-    //  Private: Log to MongoDB
 
-//    private void logMessage(String chatId, String text, String type,
-//                            MessageStatus status, Integer msgId, String error) {
-//        try {
-//            MessageLog log = new MessageLog();
-//            log.setChatId(chatId);
-//            log.setMessageText(text);
-//            log.setMessageType(MessageType.valueOf(type));
-//            log.setStatus(status);
-//            log.setTelegramMessageId(msgId);
-//            log.setErrorMessage(error);
-//            log.setSentAt(LocalDateTime.now());
-//            messageLogRepository.save(log);
-//            logger.info("Message log saved. Status: {}", status);
-//        } catch (Exception e) {
-//            logger.error("Failed to save message log: {}", e.getMessage());
-//        }
 
     private void logMessage(String chatId, String text, String type,
                             MessageStatus status, Integer msgId, String error) {
         try {
-            MessageLog log = new MessageLog();
-            log.setChatId(chatId);
-            log.setMessageText(text);
-            log.setMessageType(MessageType.valueOf(type));
-            log.setStatus(status);
-            log.setTelegramMessageId(msgId);
-            log.setErrorMessage(error);
-            log.setSentAt(LocalDateTime.now());
+            MessageLog messageLog = new MessageLog();
+            messageLog.setChatId(chatId);
+            messageLog.setMessageText(text);
+            messageLog.setMessageType(MessageType.valueOf(type));
+            messageLog.setStatus(status);
+            messageLog.setTelegramMessageId(msgId);
+            messageLog.setErrorMessage(error);
+            messageLog.setSentAt(LocalDateTime.now());
 
-            logger.info("Saving to MongoDB — status: {}, chatId: {}", status, chatId); // ← ADD
-            MessageLog saved = messageLogRepository.save(log);
-            logger.info("Saved successfully — id: {}", saved.getId()); // ← ADD
+            log.info("Saving to MongoDB — status: {}, chatId: {}", status, chatId);
+            MessageLog saved = messageLogRepository.save(messageLog);
+            log.info("Saved successfully — id: {}", saved.getId());
 
         } catch (Exception e) {
-            logger.error("FAILED to save message log: {}", e.getMessage(), e); // ← add , e
+            log.error("FAILED to save message log: {}", e.getMessage(), e);
         }
 
     }
