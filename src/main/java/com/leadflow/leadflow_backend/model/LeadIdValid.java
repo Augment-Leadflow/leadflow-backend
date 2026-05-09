@@ -15,12 +15,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.servlet.HandlerMapping;
 
 
-/**
- * Check that id is present and available when a new Lead is created.
- */
+//Check that id is present and available when a new Lead is created.
 @Target({ FIELD, METHOD, ANNOTATION_TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
@@ -37,7 +37,9 @@ public @interface LeadIdValid {
 
     class LeadIdValidValidator implements ConstraintValidator<LeadIdValid, String> {
 
+        @Autowired
         private final LeadService leadService;
+
         private final HttpServletRequest request;
 
         public LeadIdValidValidator(final LeadService leadService,
