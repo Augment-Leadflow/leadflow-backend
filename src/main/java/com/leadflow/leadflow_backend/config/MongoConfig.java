@@ -17,23 +17,23 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 @EnableMongoRepositories("com.leadflow.leadflow_backend.repos")
 public class MongoConfig {
 
-    @Bean
-    public MongoTransactionManager transactionManager(final MongoDatabaseFactory databaseFactory) {
-        return new MongoTransactionManager(databaseFactory);
-    }
+   @Bean
+   public MongoTransactionManager transactionManager(final MongoDatabaseFactory databaseFactory) {
+       return new MongoTransactionManager(databaseFactory);
+   }
 
-    @Bean
-    public ValidatingEntityCallback validatingEntityCallback(
-            final LocalValidatorFactoryBean factory) {
-        return new ValidatingEntityCallback(factory);
-    }
+   @Bean
+   public ValidatingEntityCallback validatingEntityCallback(
+           final LocalValidatorFactoryBean factory) {
+       return new ValidatingEntityCallback(factory);
+   }
 
-    @Bean
-    public MongoCustomConversions mongoCustomConversions() {
-        return new MongoCustomConversions(Arrays.asList(
-                new MongoOffsetDateTimeWriter(),
-                new MongoOffsetDateTimeReader()
-                ));
-    }
+   @Bean
+   public MongoCustomConversions mongoCustomConversions() {
+       return new MongoCustomConversions(Arrays.asList(
+               new MongoOffsetDateTimeWriter(),
+               new MongoOffsetDateTimeReader()
+               ));
+   }
 
 }

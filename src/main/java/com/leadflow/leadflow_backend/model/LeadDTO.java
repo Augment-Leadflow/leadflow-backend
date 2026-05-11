@@ -1,14 +1,12 @@
 package com.leadflow.leadflow_backend.model;
-
-import jakarta.validation.constraints.NotNull;
+import com.leadflow.leadflow_backend.domain.LeadStatus;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
 
-@Getter
-@Setter
+@Data
 public class LeadDTO {
     @LeadIdValid
     private String id;
@@ -19,20 +17,8 @@ public class LeadDTO {
     @NotNull
     @Size(max = 255)
     private String name;
-
-    @NotNull
-    @Size(max = 50)
     private String phone;
-
-    @Size(max = 255)
-    private String email;
-
-    @Size(max = 100)
     private String source;
-
-    @Size(max = 50)
-    private String status;
-
     private String notes;
 
     private LocalDateTime lastContacted;
