@@ -1,50 +1,38 @@
 package com.leadflow.leadflow_backend.domain;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import java.time.OffsetDateTime;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
-@Document
-@Getter
-@Setter
+
+
+@Data
+@Document(collection = "leads")
 public class Lead {
 
-    @NotNull
     @Id
     private String id;
-
-    @NotNull
-    @Size(max = 255)
-    private String userId;
-
-    @NotNull
-    @Size(max = 255)
+    @NotBlank(message = "Name is mandatory")
+    @Size(min = 2, message = "Name should have at least 2 characters")
     private String name;
-
-    @NotNull
-    @Size(max = 50)
-    private String phone;
 
     @Size(max = 255)
     private String email;
 
-    @Size(max = 100)
+    @NotBlank(message = "Phone number is mandatory")
+    @Pattern(regexp = "^[6-9]\\d{9}$", message = "Invalid phone number: Must be 10 digits and start with 6-9")
+    private String phone;
     private String source;
-
-    @Size(max = 50)
-    private String status;
-
+    private LeadStatus status;
     private String notes;
 
-    private OffsetDateTime lastContacted;
-
-    private OffsetDateTime createdAt;
-
-    private OffsetDateTime updatedAt;
-
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
