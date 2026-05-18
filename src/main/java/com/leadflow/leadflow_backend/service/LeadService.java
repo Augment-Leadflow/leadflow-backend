@@ -20,6 +20,16 @@ public class LeadService {
     @Autowired
     private LeadRepository leadRepository;
 
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private AutomationService automationService;
+
+    public LeadDTO createLead(final LeadDTO leadDTO) {
+        log.info("Creating new lead with name: {}", leadDTO.getName());
+        final Lead lead = new Lead();
+        mapToEntity(leadDTO, lead);
     private String getCurrentUserId() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -27,6 +37,30 @@ public class LeadService {
             return ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
         }
 
+        final Lead savedLead = leadRepository.save(lead);
+        log.info("Lead saved with ID: {}", savedLead.getId());
+
+        // Send email notification for new lead
+        if (savedLead.getEmail() != null && !savedLead.getEmail().isBlank()) {
+            try {
+                emailService.sendEmail(
+                        savedLead.getEmail(),
+                        savedLead.getName(),
+                        "AUTO_NEW_LEAD"
+                );
+                log.info("Welcome email sent to: {}", savedLead.getEmail());
+            } catch (Exception e) {
+                log.error("Failed to send welcome email to {}: {}", savedLead.getEmail(), e.getMessage());
+            }
+        }
+
+        automationService.sendTelegramNotification(savedLead, "AUTO_NEW_LEAD");
+
+        return mapToDTO(savedLead, new LeadDTO());
+    }
+
+    public List<LeadDTO> getAllLeads(String statusStr) {
+        log.info("Fetching leads list. Filter status: {}", (statusStr != null ? statusStr : "ALL"));
         if (principal instanceof com.leadflow.leadflow_backend.model.User) {
             return ((com.leadflow.leadflow_backend.model.User) principal).getEmail();
         }
@@ -60,6 +94,8 @@ public class LeadService {
         return mapToDTO(lead, new LeadDTO());
     }
 
+    public Lead updateLead(String id, @Valid LeadDTO partialLead) {
+        log.info("Processing partial update for lead ID: {}", id);
     public LeadDTO createLead(final LeadDTO leadDTO) {
         final Lead lead = new Lead();
         mapToEntity(leadDTO, lead);
@@ -115,6 +151,17 @@ public class LeadService {
         return leadRepository.save(existingLead);
     }
 
+    public List<Lead> searchLeads(String query) {
+        log.info("Searching leads with query: {}", query);
+        if (query == null || query.isEmpty()) {
+            return leadRepository.findAll();
+        }
+        if (query.matches("\\d+")) {
+            return leadRepository.findByPhoneContaining(query);
+        }
+        return leadRepository.findByNameContainingIgnoreCase(query);
+    }
+
     public void deleteLead(final String id) {
         Lead existingLead = leadRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + id));
@@ -126,6 +173,9 @@ public class LeadService {
         leadRepository.deleteById(id);
     }
 
+    public boolean idExists(final String id) {
+        log.debug("Checking if lead exists for ID: {}", id);
+        return leadRepository.existsById(id);
     private LeadDTO mapToDTO(final Lead lead, final LeadDTO leadDTO) {
         leadDTO.setId(lead.getId());
         leadDTO.setName(lead.getName());

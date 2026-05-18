@@ -12,6 +12,15 @@ import java.util.List;
 @Repository
 public interface LeadRepository extends MongoRepository<Lead, String> {
 
+    List<Lead> findByStatus(LeadStatus status);
+    List<Lead> findByNameContainingIgnoreCase(String name);
+    List<Lead> findByPhoneContaining(String phone);
+
+
+    @Query("{ 'status': 'NEW', 'createdAt': { $lt: ?0 } }")
+    List<Lead> findLeadsNeedingReminder(LocalDateTime cutoff24h);
+    @Query("{ 'status': 'IN_PROGRESS', 'updatedAt': { $lt: ?0 } }")
+    List<Lead> findLeadsNeedingFollowup(LocalDateTime cutoff2d);
    // List<Lead> findByStatus(LeadStatus status);
  //   List<Lead> findByNameContainingIgnoreCase(String name);
   //  List<Lead> findByPhoneContaining(String phone);

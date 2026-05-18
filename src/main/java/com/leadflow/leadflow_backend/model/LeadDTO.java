@@ -8,10 +8,13 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
+import lombok.*;
 
 @Data
+@Getter
+@Setter
 public class LeadDTO {
-    @LeadIdValid
+
     private String id;
 
     @Size(max = 255)
@@ -23,6 +26,9 @@ public class LeadDTO {
     private String phone;
     private String source;
     private String notes;
+    private String  email;
+    private String status;
+
     private String createdBy;
     @Size(max = 255)
     private String email;
