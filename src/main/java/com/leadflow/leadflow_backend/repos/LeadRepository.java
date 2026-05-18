@@ -13,4 +13,6 @@ public interface LeadRepository extends MongoRepository<Lead, String> {
     List<Lead> findByStatus(LeadStatus status);
     List<Lead> findByNameContainingIgnoreCase(String name);
     List<Lead> findByPhoneContaining(String phone);
+    List<Lead> findByUserId(String userId);
+    List<Lead> findByUserIdAndStatus(String userId, LeadStatus status);
 }
