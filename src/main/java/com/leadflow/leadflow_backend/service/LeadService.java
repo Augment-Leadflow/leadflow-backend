@@ -21,6 +21,16 @@ public class LeadService {
     private LeadRepository leadRepository;
 
     private String getCurrentUserId() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
+            return ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
+        }
+
+        if (principal instanceof com.leadflow.leadflow_backend.model.User) {
+            return ((com.leadflow.leadflow_backend.model.User) principal).getEmail();
+        }
+
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
@@ -67,7 +77,8 @@ public class LeadService {
 
     public List<Lead> searchLeads(String query) {
         return leadRepository.findAll().stream()
-                .filter(lead -> lead.getUserId().equals(getCurrentUserId()) &&
+                .filter(lead -> lead.getUserId() != null &&
+                        lead.getUserId().equals(getCurrentUserId()) &&
                         (lead.getName().toLowerCase().contains(query.toLowerCase()) ||
                                 lead.getEmail().toLowerCase().contains(query.toLowerCase())))
                 .collect(Collectors.toList());
@@ -125,6 +136,8 @@ public class LeadService {
         leadDTO.setNotes(lead.getNotes());
         leadDTO.setUserId(lead.getUserId());
         leadDTO.setCreatedBy(lead.getCreatedBy());
+        leadDTO.setCreatedAt(lead.getCreatedAt());
+        leadDTO.setUpdatedAt(lead.getUpdatedAt());
         return leadDTO;
     }
 
