@@ -1,5 +1,4 @@
 package com.leadflow.leadflow_backend.service;
-
 import com.leadflow.leadflow_backend.domain.Role;
 import com.leadflow.leadflow_backend.dto.LoginRequest;
 import com.leadflow.leadflow_backend.dto.LoginResponse;
@@ -12,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -109,6 +109,7 @@ public class AuthService {
 
         User user = User.builder()
                 .email(request.getEmail())
+                .name(request.getName())
                 .password(
                         passwordEncoder.encode(
                                 request.getPassword()

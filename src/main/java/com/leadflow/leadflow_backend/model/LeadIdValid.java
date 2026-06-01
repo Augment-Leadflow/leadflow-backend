@@ -1,9 +1,7 @@
 package com.leadflow.leadflow_backend.model;
-
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
-
 import com.leadflow.leadflow_backend.service.LeadService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Constraint;
@@ -15,7 +13,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.servlet.HandlerMapping;
 
@@ -52,18 +49,18 @@ public @interface LeadIdValid {
         public boolean isValid(final String value, final ConstraintValidatorContext cvContext) {
             @SuppressWarnings("unchecked") final Map<String, String> pathVariables =
                     ((Map<String, String>)request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE));
-            final String currentId = pathVariables.get("id");
-            if (currentId != null) {
-                // only relevant for new objects
+
+            if (pathVariables == null || !pathVariables.containsKey("id")) {
                 return true;
             }
+
             String error = null;
             if (value == null) {
-                // missing input
                 error = "NotNull";
             } else if (leadService.idExists(value)) {
                 error = "Exists.lead.id";
             }
+
             if (error != null) {
                 cvContext.disableDefaultConstraintViolation();
                 cvContext.buildConstraintViolationWithTemplate("{" + error + "}")
@@ -72,7 +69,6 @@ public @interface LeadIdValid {
             }
             return true;
         }
-
     }
 
 }

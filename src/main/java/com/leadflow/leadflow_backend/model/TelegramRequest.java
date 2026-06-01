@@ -3,11 +3,6 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-/**
- * Data Transfer Object for Telegram notification requests.
- * Aligned with LeadFlow CRM MVP requirements for lead tracking.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,4 +19,8 @@ public class TelegramRequest {
 
     @NotBlank(message = "Type is required")
     private String type;
+
+    private String message;
+
+    private String leadChatId;
 }
