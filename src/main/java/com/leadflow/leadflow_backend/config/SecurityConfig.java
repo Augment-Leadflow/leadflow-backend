@@ -81,26 +81,6 @@ public class SecurityConfig {
         return new CorsFilter(source);
     }
 
-    @Bean
-    @Order(Ordered.HIGHEST_PRECEDENCE)
-    public CorsFilter corsFilter() {
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        CorsConfiguration config = new CorsConfiguration();
-
-        config.setAllowCredentials(true);
-        config.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "http://localhost:3001",
-                "http://127.0.0.1:3000",
-                "http://127.0.0.1:3001"
-        ));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setMaxAge(3600L);
-
-        source.registerCorsConfiguration("/**", config);
-        return new CorsFilter(source);
-    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(
