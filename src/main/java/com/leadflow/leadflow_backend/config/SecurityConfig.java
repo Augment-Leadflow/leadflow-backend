@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -71,7 +72,8 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "http://localhost:3001",
                 "http://127.0.0.1:3000",
-                "http://127.0.0.1:3001"
+                "http://127.0.0.1:3001",
+                "https://leadflow-frontend-vfdp.vercel.app"
         ));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
@@ -88,7 +90,7 @@ public class SecurityConfig {
     ) throws Exception {
 
         http
-                .cors(cors -> cors.disable())
+                .cors(Customizer.withDefaults())
 
                 .csrf(csrf -> csrf.disable())
 
