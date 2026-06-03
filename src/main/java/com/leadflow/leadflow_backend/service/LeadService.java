@@ -46,7 +46,7 @@ public class LeadService {
         final Lead lead = new Lead();
         mapToEntity(leadDTO, lead);
 
-        String currentUserId = "leadflow.officiall@gmail.com";
+        String currentUserId = getCurrentUserId();
         lead.setUserId(currentUserId);
         lead.setCreatedBy(currentUserId);
 
@@ -91,7 +91,7 @@ public class LeadService {
 
     public List<LeadDTO> getAllLeads(String status) {
         log.info("Fetching leads list. Filter status: {}", (status != null ? status : "ALL"));
-        String currentUserId = "leadflow.officiall@gmail.com";
+        String currentUserId = getCurrentUserId();
         List<Lead> leads;
 
         if (status != null && !status.isEmpty()) {
