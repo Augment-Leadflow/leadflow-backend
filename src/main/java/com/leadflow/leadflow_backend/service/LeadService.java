@@ -91,7 +91,7 @@ public class LeadService {
 
     public List<LeadDTO> getAllLeads(String status) {
         log.info("Fetching leads list. Filter status: {}", (status != null ? status : "ALL"));
-        String currentUserId = "yogeshhammad19@gmail.com";
+        String currentUserId = "leadflow.officiall@gmail.com";
         List<Lead> leads;
 
         if (status != null && !status.isEmpty()) {
