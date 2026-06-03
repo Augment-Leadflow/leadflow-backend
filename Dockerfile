@@ -27,9 +27,9 @@ ENV TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
 ENV MAIL_USERNAME=${MAIL_USERNAME}
 ENV MAIL_PASSWORD=${MAIL_PASSWORD}
 ENV FRONTEND_URL=${FRONTEND_URL}
-ENV twilio.account.sid=${twilio.account.sid}
-ENV twilio.auth.token=${twilio.auth.token}
-ENV twilio.whatsapp.number=${twilio.whatsapp.number}
+ENV twilio_account_sid=${twilio.account.sid}
+ENV twilio_auth_token=${twilio.auth.token}
+ENV twilio_whatsapp_number=${twilio.whatsapp.number}
 
 USER leadflow
 
