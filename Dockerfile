@@ -9,7 +9,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B --no-transfer-progress
 RUN cp target/*.jar app.jar && rm -f target/*.jar.original
 
-RUN unzip -p app.jar BOOT-INF/classes/application.properties
+RUN jar xf app.jar BOOT-INF/classes/application.properties && cat BOOT-INF/classes/application.properties
 
 FROM eclipse-temurin:17-jre-alpine AS runtime
 
