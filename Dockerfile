@@ -18,6 +18,19 @@ WORKDIR /app
 COPY --from=builder /app/app.jar app.jar
 RUN chown leadflow:leadflow app.jar
 
+ENV MONGO_URL=${MONGO_URL}
+ENV REDIS_HOST=${REDIS_HOST}
+ENV REDIS_PORT=${REDIS_PORT}
+ENV JWT_SECRET_TOKEN=${JWT_SECRET_TOKEN}
+ENV TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+ENV TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+ENV MAIL_USERNAME=${MAIL_USERNAME}
+ENV MAIL_PASSWORD=${MAIL_PASSWORD}
+ENV FRONTEND_URL=${FRONTEND_URL}
+ENV twilio.account.sid=${twilio.account.sid}
+ENV twilio.auth.token=${twilio.auth.token}
+ENV twilio.whatsapp.number=${twilio.whatsapp.number}
+
 USER leadflow
 
 EXPOSE 8080
