@@ -9,6 +9,8 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B --no-transfer-progress
 RUN cp target/*.jar app.jar && rm -f target/*.jar.original
 
+RUN jar xf app.jar BOOT-INF/classes/application.properties && cat BOOT-INF/classes/application.properties
+
 FROM eclipse-temurin:17-jre-alpine AS runtime
 
 RUN addgroup -S leadflow && adduser -S leadflow -G leadflow
