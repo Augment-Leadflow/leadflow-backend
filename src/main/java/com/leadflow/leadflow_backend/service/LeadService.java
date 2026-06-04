@@ -172,6 +172,21 @@ public class LeadService {
         return leadRepository.existsById(id);
     }
 
+    public List<LeadDTO> getAllLeadsForUser(String userId, String status) {
+        log.info("Fetching leads for user: {}, status filter: {}", userId, status);
+        List<Lead> leads;
+
+        if (status != null && !status.isEmpty()) {
+            leads = leadRepository.findByUserIdAndStatus(userId, LeadStatus.valueOf(status));
+        } else {
+            leads = leadRepository.findByUserId(userId);
+        }
+
+        return leads.stream()
+                .map(lead -> mapToDTO(lead, new LeadDTO()))
+                .collect(Collectors.toList());
+    }
+
     private LeadDTO mapToDTO(final Lead lead, final LeadDTO leadDTO) {
         leadDTO.setId(lead.getId());
         leadDTO.setName(lead.getName());

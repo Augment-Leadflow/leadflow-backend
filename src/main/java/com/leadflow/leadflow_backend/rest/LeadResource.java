@@ -41,7 +41,11 @@ public class LeadResource {
             Authentication authentication) {
         log.info("REST request to get all leads with status: {}", status);
         try {
-            return ResponseEntity.ok(leadService.getAllLeads(status));
+            com.leadflow.leadflow_backend.model.User user =
+                    (com.leadflow.leadflow_backend.model.User) authentication.getPrincipal();
+            String userId = user.getEmail();
+
+            return ResponseEntity.ok(leadService.getAllLeadsForUser(userId, status));
         } catch (Exception e) {
             log.error("Failed to fetch leads: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
