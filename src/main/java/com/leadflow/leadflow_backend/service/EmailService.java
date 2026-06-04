@@ -7,14 +7,12 @@ import com.leadflow.leadflow_backend.teleException.EmailException;
 import com.leadflow.leadflow_backend.model.SendResponse;
 import com.leadflow.leadflow_backend.repos.MessageLogRepository;
 import com.leadflow.leadflow_backend.util.EmailTemplates;
-import jakarta.mail.internet.MimeMessage;
+import com.resend.Resend;
+import com.resend.services.emails.model.CreateEmailOptions;
+import com.resend.services.emails.model.CreateEmailResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -23,22 +21,17 @@ import java.time.LocalDateTime;
 @Service
 public class EmailService {
 
-
     private static final int MAX_RETRIES = 3;
     private static final long RETRY_DELAY_MS = 1000L;
 
-    @Autowired
-    private JavaMailSender mailSender;
-
-    @Value("${spring.mail.username}")
-    private String fromEmail;
+    @Value("${resend.api.key}")
+    private String resendApiKey;
 
     @Autowired
     private MessageLogRepository messageLogRepository;
 
-    // ─── Public: Send Email (UNTOUCHED - NO CHANGES)
     public SendResponse sendEmail(String toEmail, String leadName, String type) {
-        log.info("Attempting to send email. Type: {}, To: {}", type, toEmail);
+        log.info("Attempting to send email via Resend. Type: {}, To: {}", type, toEmail);
 
         String subject = getSubject(type);
         String body = getBody(type, leadName);
@@ -47,18 +40,19 @@ public class EmailService {
             try {
                 log.info("Email attempt {}/{}", attempt, MAX_RETRIES);
 
-                MimeMessage message = mailSender.createMimeMessage();
-                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                Resend resend = new Resend(resendApiKey);
 
-                helper.setFrom(fromEmail);
-                helper.setTo(toEmail);
-                helper.setSubject(subject);
-                helper.setText(body, true); // true = HTML
+                CreateEmailOptions params = CreateEmailOptions.builder()
+                        .from("LeadFlow <onboarding@resend.dev>")
+                        .to(toEmail)
+                        .subject(subject)
+                        .html(body)
+                        .build();
 
-                mailSender.send(message);
+                CreateEmailResponse response = resend.emails().send(params);
 
                 logMessage(toEmail, subject, type, MessageStatus.SUCCESS, null);
-                log.info("Email sent successfully to: {}", toEmail);
+                log.info("Email sent successfully via Resend. ID: {}", response.getId());
 
                 return new SendResponse(true, null, LocalDateTime.now());
 
@@ -83,7 +77,6 @@ public class EmailService {
         return null;
     }
 
-    // ─── Subject by type (UNTOUCHED - NO CHANGES)
     private String getSubject(String type) {
         switch (type) {
             case "AUTO_NEW_LEAD": return "Welcome to LeadFlow!";
@@ -94,7 +87,6 @@ public class EmailService {
         }
     }
 
-    // ─── Body by type (UNTOUCHED - NO CHANGES)
     private String getBody(String type, String name) {
         switch (type) {
             case "AUTO_NEW_LEAD": return EmailTemplates.welcomeEmail(name);
@@ -105,7 +97,6 @@ public class EmailService {
         }
     }
 
-    // ─── Private: Log to MongoDB (SAFELY UPDATED FOR ENUM CRASH)
     private void logMessage(String email, String subject, String type,
                             MessageStatus status, String error) {
         try {
@@ -114,7 +105,6 @@ public class EmailService {
             messageLog.setChannel("EMAIL");
             messageLog.setMessageText(subject);
 
-            // Safe Enum Extraction to completely remove the IllegalArgumentException
             try {
                 if (type != null && type.contains("follow-up")) {
                     messageLog.setMessageType(MessageType.FOLLOWUP);
@@ -124,8 +114,7 @@ public class EmailService {
                     messageLog.setMessageType(MessageType.valueOf(type.toUpperCase().trim()));
                 }
             } catch (IllegalArgumentException ex) {
-                // Fallback safe value log standard
-                log.warn("Unknown MessageType string [{}], defaulting to REMINDER for logging purposes.", type);
+                log.warn("Unknown MessageType [{}], defaulting to REMINDER.", type);
                 messageLog.setMessageType(MessageType.REMINDER);
             }
 
