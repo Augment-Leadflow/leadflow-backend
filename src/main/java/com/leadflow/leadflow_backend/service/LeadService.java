@@ -26,7 +26,7 @@ public class LeadService {
     @Autowired
     private TelegramService telegramService;
 
-    // ── Create ─────────────────────────────────────────────────────────────────
+
     public LeadDTO createLead(final LeadDTO leadDTO, String userId) {
         log.info("Creating new lead for user: {}, name: {}", userId, leadDTO.getName());
 
@@ -64,7 +64,7 @@ public class LeadService {
         return mapToDTO(savedLead, new LeadDTO());
     }
 
-    // ── Get All for User ───────────────────────────────────────────────────────
+
     public List<LeadDTO> getAllLeadsForUser(String userId, String status) {
         log.info("Fetching leads for user: {}, status: {}", userId, status);
         List<Lead> leads;
@@ -80,7 +80,7 @@ public class LeadService {
                 .collect(Collectors.toList());
     }
 
-    // ── Get By ID ──────────────────────────────────────────────────────────────
+
     public LeadDTO getLeadById(final String id, String userId) {
         Lead lead = leadRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + id));
@@ -92,7 +92,6 @@ public class LeadService {
         return mapToDTO(lead, new LeadDTO());
     }
 
-    // ── Update ─────────────────────────────────────────────────────────────────
     public Lead updateLead(String id, LeadDTO partialLead, String userId) {
         log.info("Updating lead ID: {} for user: {}", id, userId);
 
@@ -126,7 +125,7 @@ public class LeadService {
         return leadRepository.save(existingLead);
     }
 
-    // ── Search ─────────────────────────────────────────────────────────────────
+
     public List<Lead> searchLeads(String query, String userId) {
         log.info("Searching leads for user: {}, query: {}", userId, query);
         List<Lead> leads;
@@ -144,7 +143,7 @@ public class LeadService {
                 .collect(Collectors.toList());
     }
 
-    // ── Delete ─────────────────────────────────────────────────────────────────
+
     public void deleteLead(final String id, String userId) {
         log.warn("Deleting lead ID: {} for user: {}", id, userId);
 
@@ -159,7 +158,7 @@ public class LeadService {
         log.info("Lead deleted. ID: {}", id);
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────────
+
     public boolean idExists(final String id) {
         return leadRepository.existsById(id);
     }
