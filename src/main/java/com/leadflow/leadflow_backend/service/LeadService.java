@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -27,77 +26,53 @@ public class LeadService {
     @Autowired
     private TelegramService telegramService;
 
-    private String getCurrentUserId() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    // ── Create ─────────────────────────────────────────────────────────────────
+    public LeadDTO createLead(final LeadDTO leadDTO, String userId) {
+        log.info("Creating new lead for user: {}, name: {}", userId, leadDTO.getName());
 
-        if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
-            return ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
-        }
-
-        if (principal instanceof com.leadflow.leadflow_backend.model.User) {
-            return ((com.leadflow.leadflow_backend.model.User) principal).getEmail();
-        }
-
-        return SecurityContextHolder.getContext().getAuthentication().getName();
-    }
-
-    public LeadDTO createLead(final LeadDTO leadDTO) {
-        log.info("Creating new lead with name: {}", leadDTO.getName());
         final Lead lead = new Lead();
         mapToEntity(leadDTO, lead);
 
-        String currentUserId = getCurrentUserId();
-        lead.setUserId(currentUserId);
-        lead.setCreatedBy(currentUserId);
-
+        lead.setUserId(userId);
+        lead.setCreatedBy(userId);
         lead.setCreatedAt(LocalDateTime.now());
         lead.setUpdatedAt(LocalDateTime.now());
 
         final Lead savedLead = leadRepository.save(lead);
-        log.info("Lead structural insert committed in MongoDB with ID: {}", savedLead.getId());
+        log.info("Lead saved with ID: {}", savedLead.getId());
 
         if (savedLead.getEmail() != null && !savedLead.getEmail().isBlank()) {
             try {
-                emailService.sendEmail(
-                        savedLead.getEmail(),
-                        savedLead.getName(),
-                        "AUTO_NEW_LEAD"
-                );
+                emailService.sendEmail(savedLead.getEmail(), savedLead.getName(), "AUTO_NEW_LEAD");
                 log.info("Welcome email sent to: {}", savedLead.getEmail());
             } catch (Exception e) {
-                log.error("Failed to send welcome email to {}: {}", savedLead.getEmail(), e.getMessage());
+                log.error("Failed to send welcome email: {}", e.getMessage());
             }
         }
 
         try {
-            log.info("Handing over lead payload to background Telegram automation pipeline...");
-
             telegramService.sendMessage(
                     savedLead.getName() != null ? savedLead.getName() : "New Lead",
                     savedLead.getPhone() != null ? savedLead.getPhone() : "",
                     savedLead.getSource() != null ? savedLead.getSource() : "Direct",
-                    "AUTO_NEW_LEAD",
-                    "",
-                    ""
+                    "AUTO_NEW_LEAD", "", ""
             );
-
-            log.info("Telegram background automation engine dispatched alert successfully!");
         } catch (Exception e) {
-            log.error("Telegram automated alerting pipeline failed safely but database was protected: {}", e.getMessage());
+            log.error("Telegram notification failed: {}", e.getMessage());
         }
 
         return mapToDTO(savedLead, new LeadDTO());
     }
 
-    public List<LeadDTO> getAllLeads(String status) {
-        log.info("Fetching leads list. Filter status: {}", (status != null ? status : "ALL"));
-        String currentUserId = getCurrentUserId();
+    // ── Get All for User ───────────────────────────────────────────────────────
+    public List<LeadDTO> getAllLeadsForUser(String userId, String status) {
+        log.info("Fetching leads for user: {}, status: {}", userId, status);
         List<Lead> leads;
 
         if (status != null && !status.isEmpty()) {
-            leads = leadRepository.findByUserIdAndStatus(currentUserId, LeadStatus.valueOf(status));
+            leads = leadRepository.findByUserIdAndStatus(userId, LeadStatus.valueOf(status));
         } else {
-            leads = leadRepository.findByUserId(currentUserId);
+            leads = leadRepository.findByUserId(userId);
         }
 
         return leads.stream()
@@ -105,17 +80,28 @@ public class LeadService {
                 .collect(Collectors.toList());
     }
 
-    public LeadDTO getLeadById(final String id) {
+    // ── Get By ID ──────────────────────────────────────────────────────────────
+    public LeadDTO getLeadById(final String id, String userId) {
         Lead lead = leadRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + id));
+
+        if (!lead.getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
 
         return mapToDTO(lead, new LeadDTO());
     }
 
-    public Lead updateLead(String id, LeadDTO partialLead) {
-        log.info("Processing partial update for lead ID: {}", id);
+    // ── Update ─────────────────────────────────────────────────────────────────
+    public Lead updateLead(String id, LeadDTO partialLead, String userId) {
+        log.info("Updating lead ID: {} for user: {}", id, userId);
+
         Lead existingLead = leadRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + id));
+
+        if (!existingLead.getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
 
         if (partialLead.getName() != null && !partialLead.getName().isEmpty()) {
             existingLead.setName(partialLead.getName());
@@ -140,13 +126,13 @@ public class LeadService {
         return leadRepository.save(existingLead);
     }
 
-    public List<Lead> searchLeads(String query) {
-        log.info("Searching leads with query: {}", query);
-        String currentUserId = "leadflow.officiall@gmail.com";
+    // ── Search ─────────────────────────────────────────────────────────────────
+    public List<Lead> searchLeads(String query, String userId) {
+        log.info("Searching leads for user: {}, query: {}", userId, query);
         List<Lead> leads;
 
         if (query == null || query.isEmpty()) {
-            leads = leadRepository.findAll();
+            leads = leadRepository.findByUserId(userId);
         } else if (query.matches("\\d+")) {
             leads = leadRepository.findByPhoneContaining(query);
         } else {
@@ -154,37 +140,28 @@ public class LeadService {
         }
 
         return leads.stream()
-                .filter(lead -> lead.getUserId() != null && lead.getUserId().equals(currentUserId))
+                .filter(lead -> userId.equals(lead.getUserId()))
                 .collect(Collectors.toList());
     }
 
-    public void deleteLead(final String id) {
-        log.warn("Processing execution command to drop lead ID: {}", id);
+    // ── Delete ─────────────────────────────────────────────────────────────────
+    public void deleteLead(final String id, String userId) {
+        log.warn("Deleting lead ID: {} for user: {}", id, userId);
+
         Lead existingLead = leadRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + id));
 
-        leadRepository.deleteById(id);
-        log.info("Lead completely dropped from MongoDB cluster collection. ID: {}", id);
-    }
-
-    public boolean idExists(final String id) {
-        log.debug("Checking if lead exists for ID: {}", id);
-        return leadRepository.existsById(id);
-    }
-
-    public List<LeadDTO> getAllLeadsForUser(String userId, String status) {
-        log.info("Fetching leads for user: {}, status filter: {}", userId, status);
-        List<Lead> leads;
-
-        if (status != null && !status.isEmpty()) {
-            leads = leadRepository.findByUserIdAndStatus(userId, LeadStatus.valueOf(status));
-        } else {
-            leads = leadRepository.findByUserId(userId);
+        if (!existingLead.getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
         }
 
-        return leads.stream()
-                .map(lead -> mapToDTO(lead, new LeadDTO()))
-                .collect(Collectors.toList());
+        leadRepository.deleteById(id);
+        log.info("Lead deleted. ID: {}", id);
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    public boolean idExists(final String id) {
+        return leadRepository.existsById(id);
     }
 
     private LeadDTO mapToDTO(final Lead lead, final LeadDTO leadDTO) {
