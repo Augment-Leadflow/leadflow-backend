@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -22,7 +23,7 @@ public class LeadResource {
 
     @PostMapping
     public ResponseEntity<?> createLead(@Valid @RequestBody final LeadDTO leadDTO) {
-        // Log clean rakha hai taaki telegram hatne par crash na ho
+
         log.info("REST request to create a new lead. Name: {}", leadDTO.getName());
         try {
             LeadDTO created = leadService.createLead(leadDTO);
@@ -35,7 +36,9 @@ public class LeadResource {
     }
 
     @GetMapping
-    public ResponseEntity<?> getAllLeads(@RequestParam(required = false) String status) {
+    public ResponseEntity<?> getAllLeads(
+            @RequestParam(required = false) String status,
+            Authentication authentication) {
         log.info("REST request to get all leads with status: {}", status);
         try {
             return ResponseEntity.ok(leadService.getAllLeads(status));

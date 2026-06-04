@@ -34,64 +34,45 @@ public class JwtAuthenticationFilter
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        final String authHeader =
-                request.getHeader("Authorization");
+        final String authHeader = request.getHeader("Authorization");
 
         String jwtToken = null;
         String email = null;
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwtToken = authHeader.substring(7);
-
             try {
                 email = jwtUtil.extractEmail(jwtToken);
             } catch (Exception e) {
                 log.warn("Invalid JWT token format: {}", e.getMessage());
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
+                filterChain.doFilter(request, response);
                 return;
             }
         }
 
         if (email != null &&
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication() == null) {
+                SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            User user = userRepository
-                    .findByEmail(email)
-                    .orElse(null);
+            User user = userRepository.findByEmail(email).orElse(null);
 
-            if (user != null &&
-                    jwtUtil.validateToken(jwtToken)) {
+            if (user != null && jwtUtil.validateToken(jwtToken)) {
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
                                 user,
                                 null,
-                                List.of(
-                                        new SimpleGrantedAuthority(
-                                                "ROLE_" + user.getRole().name()
-                                        )
-                                )
+                                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
                         );
 
                 authToken.setDetails(
-                        new WebAuthenticationDetailsSource()
-                                .buildDetails(request)
+                        new WebAuthenticationDetailsSource().buildDetails(request)
                 );
 
-                SecurityContextHolder
-                        .getContext()
-                        .setAuthentication(authToken);
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+                log.info("JWT authentication successful for user: {}", email);
 
-                log.info(
-                        "JWT authentication successful for user: {}",
-                        email
-                );
             } else {
-                log.warn("JWT validation failed for token: {}", jwtToken);
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token validation failed");
-                return;
+                log.warn("JWT validation failed or user not found for: {}", email);
             }
         }
 
